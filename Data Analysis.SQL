@@ -1,61 +1,108 @@
-CREATE DATABASE projects;
 
-USE projects;
+use projects;
 
-SELECT * FROM hr;
+select
+   min(age) as youngest,
+   max(age) as oldest
+from hr;
 
-ALTER TABLE hr
-CHANGE COLUMN ï»¿id emp_id VARCHAR(20) NULL;
+select count(*) from hr 
+where age<18;
 
-DESCRIBE hr;
+select * from hr;
 
-SELECT birthdate FROM hr;
+select gender,count(*) as count
+from hr
+where age >= 18 and termdate ='0000-00-00'
+group by gender;
 
-SET sql_safe_updates = 0;
+select race,count(*) as count from hr
+where age >= 20 and termdate ='0000-00-00'
+group by race
+order by count(*) desc;
 
-UPDATE hr
-SET birthdate = CASE
-	WHEN birthdate LIKE '%/%' THEN date_format(str_to_date(birthdate, '%m/%d/%Y'), '%Y-%m-%d')
-    WHEN birthdate LIKE '%-%' THEN date_format(str_to_date(birthdate, '%m-%d-%Y'), '%Y-%m-%d')
-    ELSE NULL
-END;
+select * from hr;
 
-ALTER TABLE hr
-MODIFY COLUMN birthdate DATE;
+select age,count(*) as count
+from hr
+where age >= 20 and termdate ='0000-00-00'
+group by age
+order by count(*) desc;
 
-UPDATE hr
-SET hire_date = CASE
-	WHEN hire_date LIKE '%/%' THEN date_format(str_to_date(hire_date, '%m/%d/%Y'), '%Y-%m-%d')
-    WHEN hire_date LIKE '%-%' THEN date_format(str_to_date(hire_date, '%m-%d-%Y'), '%Y-%m-%d')
-    ELSE NULL
-END;
 
-ALTER TABLE hr
-MODIFY COLUMN hire_date DATE;
-
-UPDATE hr
-SET termdate = date(str_to_date(termdate, '%Y-%m-%d %H:%i:%s UTC'))
-WHERE termdate IS NOT NULL AND termdate != ' ';
-
-ALTER TABLE hr
-MODIFY COLUMN termdate DATE;
-
-ALTER TABLE hr ADD COLUMN age INT;
-
-UPDATE hr
-SET age = timestampdiff(YEAR, birthdate, CURDATE());
-
-SELECT 
-	min(age) AS youngest,
-    max(age) AS oldest
-FROM hr;
-
-SELECT count(*) FROM hr WHERE age < 18;
-
-SELECT COUNT(*) FROM hr WHERE termdate > CURDATE();
-
-SELECT COUNT(*)
-FROM hr
-WHERE termdate = '0000-00-00';
-
-SELECT location FROM hr;
+select case 
+     when age >=18 AND age <=24 then '18-24'
+     when age >=25 AND age <=34 then '25-34'
+	 when age >=35 AND age <=44 then '35-44'
+	 when age >=45 AND age <=54 then '44-54'
+	 when age >=55 AND age <=64 then '55-64'
+     else '65+'
+     end as age_group,gender,
+     count(*) as count
+     from hr
+     where age >= 20 and termdate ='0000-00-00'
+     group by age_group,gender
+     order by age_group,gender;
+     
+     select * from hr;
+     
+     select location,count(*) as count
+     from hr
+     where age >= 20 and termdate ='0000-00-00'
+     group by location;
+     
+	 select round(avg( datediff(termdate,hire_date))/365,0) as average_length_employment
+     from hr
+     where termdate <= curdate() and age >= 20 and termdate !='0000-00-00';
+     
+     select department,gender,count(*) as count
+     from hr
+     where age >= 20 and termdate ='0000-00-00'
+     group by department,gender
+     order by department;
+   
+   select jobtitle, count(*) as count
+   from hr
+   where age >= 20 and termdate ='0000-00-00'
+   group by jobtitle
+   order by count(*) desc;
+   
+   
+   select department,total_count,terminated_count,
+   terminated_count/total_count as termination_rate
+   from
+   (select department,
+   count(*) as total_count,
+   sum(case when termdate <> '0000-00-00' AND termdate <= curdate() then 1 else 0 end)
+   as terminated_count
+   from hr
+   where age >= 18
+   group by department) as subquery
+   order by termination_rate desc;
+   
+   select location_state,
+   count(*) as count 
+   from hr
+   where age >= 20 and termdate ='0000-00-00'
+   group by location_state
+   order by count(*) desc;
+   
+   
+   select 
+   year,hires,terminations,
+   hires-terminations as net_change,
+   round((hires-terminations)/hires*100,2) as net_change_percent
+   from(
+   select year(hire_date) as year,
+   count(*) as hires,
+   SUM(case when termdate <> '0000-00-00' and termdate <= curdate() then 1 else 0 end) as terminations
+   from hr
+   where age >= 18
+   group by year(hire_date)
+   )as subquery
+   order by year asc;
+   
+   select department,round(avg(datediff(termdate,hire_date)/365),0) as avg_tenure
+   from hr
+   where termdate <= curdate() and termdate <> '0000-00-00' and age >=18
+   group by department;
